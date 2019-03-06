@@ -27,6 +27,9 @@ app.get('/signup', function (req, res) {
     res.render('signup');
 })
 
+console.log(makeLabelForBoss("구로구"));
+
+
 app.get('/login', function (req, res) {
     res.render('login');
 })
@@ -141,7 +144,6 @@ app.get('/getBalance', function (req, res) {
     request(options, function (error, response, body) {
         console.log(JSON.parse(body));
     })
-
 })
 
 app.get('/getAccountList', function (req, res) {
@@ -159,8 +161,100 @@ app.get('/getAccountList', function (req, res) {
 
 })
 
+app.get('/withDraw', function (req, res) {
+    var getUserDataURI = 'https://testapi.open-platform.or.kr/transfer/withdraw'; // 토큰을 받을 수 있는 restful url
+    var options = {
+        url: getUserDataURI,
+        json : true,
+        method : 'POST',
+        headers: {
+            'Content-Type' : 'application/json; charset=UTF-8',
+            'Authorization' : 'Bearer '+accessKey
+        },
+        body : {
+            dps_print_content : '통장기재내용',
+            fintech_use_num : '199003328057724253977191',
+            print_content : '통장기재내용',
+            tran_amt : 1000,
+            tran_dtime : '20160310101921'
+        }
+    };
+    request(options, function (error, response, body) {
+        console.log(body);
+    })
+});
+
+app.post('/getTrainInfoByDongId',isAuthenticated, function (req, res) {
+    var dongId = req.body.dongId;
+    var sql = 'select id from training where dongId=?';
+    dbconn.pool.getConnection(function (err, conn) {
+        if (err) {
+            console.error(err);
+            throw err;
+        } else {
+            conn.query(sql, dongId, function (err, result) {
+
+                if (err) {
+                    console.error(err);
+                    throw err;
+                } else {
+                    conn.release();
+                    res.json(result);
+                }
+            })
+        }
+    })
+});
 
 
+app.post('/getInfoOneByTrainId',isAuthenticated, function (req, res) {
+    var trainingId = req.body.trainingId;
+    var sql = 'select cd_members.id, cd_name, cd_birth, cd_phone, cd_organization, dong_id, edu_division, cd_req_date, agree_statment, isGetting, gettingTime, isAttendance, isAttendanceDate, cd_address, cd_address_ji  from training_has_member join cd_members on training_has_member.memberId = cd_members.id where training_has_member.trainingId =?';
+    dbconn.pool.getConnection(function (err, conn) {
+        if (err) {
+            console.error(err);
+            throw err;
+        } else {
+            conn.query(sql, trainingId, function (err, result) {
+
+                if (err) {
+                    console.error(err);
+                    throw err;
+                } else {
+                    conn.release();
+                    res.json(result);
+                }
+            })
+        }
+    })
+});
+
+
+app.post('/getInfoTwoByTrainId',isAuthenticated, function (req, res) {
+
+    var trainingId = req.body.trainingId;
+
+    var sql = 'select kakao_result.userId, kakao_result.cmid from training_has_member join kakao_result on training_has_member.memberId = kakao_result.userId where kakao_result.trainingId = ?';
+
+
+    dbconn.pool.getConnection(function (err, conn) {
+        if (err) {
+            console.error(err);
+            throw err;
+        } else {
+            conn.query(sql, trainingId, function (err, result) {
+
+                if (err) {
+                    console.error(err);
+                    throw err;
+                } else {
+                    conn.release();
+                    res.json(result);
+                }
+            })
+        }
+    })
+});
 app.post('/join', function (req, res) {
     var userid = req.body.userId;
     var name = req.body.name;
